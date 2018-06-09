@@ -58,7 +58,7 @@ private:
 class Tank: public Object
 {
 public:		
-	Tank(int xx=20,int yy= 20,int d = 0){x = xx,y = yy,dir = d;}
+	Tank(int xx=20,int yy= 20,int d = LEFT){x = xx,y = yy,dir = d;}
 	void Set(int xx,int yy){x = xx,y = yy;}
 	void SetX(int xx){x = xx;}
 	void SetY(int yy){y = yy;}

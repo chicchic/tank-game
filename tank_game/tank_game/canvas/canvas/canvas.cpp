@@ -10,7 +10,7 @@
 #pragma comment(lib,"winmm.lib")//导入声音头文件库
 
 HINSTANCE hInst;
-HBITMAP  bg,start,tankTopImg,tankLeftImg,tankRightImg,tankBottomImg;						//图片
+HBITMAP  bg,start,tankImg[4];						//图片
 HDC		hdc, mdc, bufdc;
 HWND	hWnd;
 DWORD	tPre, tNow;						//控制刷新频率
@@ -23,7 +23,9 @@ void				MyPaint(HDC hdc);
 void				StartPaint(HDC hdc);
 
 
-
+//为方便暂时作为全局变量
+//初始化的坦克
+Tank myTank(100,100,LEFT);				//define left 2
 
 
 
@@ -51,11 +53,12 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 		else
 		{
 			tNow = GetTickCount();
-			if (tNow - tPre >= 40)				//刷新频率
+			if (tNow - tPre >= 40){				//刷新频率
 				if(isStart)				//游戏已经开始
 					MyPaint(hdc);
 				else
 					StartPaint(hdc);			//游戏未开始
+			}
 		}
 	}
 
@@ -113,13 +116,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	//加载图片
 	start = (HBITMAP)LoadImage(NULL, "start.bmp", IMAGE_BITMAP, 650, 450, LR_LOADFROMFILE);			//开始界面
 	//bg = (HBITMAP)LoadImage(NULL, "bg.bmp", IMAGE_BITMAP, 650, 450, LR_LOADFROMFILE);				//背景图
-	tankTopImg = (HBITMAP)LoadImage(NULL, "top.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				//坦克
-	tankLeftImg = (HBITMAP)LoadImage(NULL, "left.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				
-	tankRightImg = (HBITMAP)LoadImage(NULL, "right.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				
-	tankBottomImg = (HBITMAP)LoadImage(NULL, "bottom.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				
 
-	//初始化的坦克
-	Tank myTank(100,100,RIGHT);
+	//上下左右对应 0 1 2 3 
+	tankImg[0] = (HBITMAP)LoadImage(NULL, "top.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				//坦克
+	tankImg[2] = (HBITMAP)LoadImage(NULL, "left.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				
+	tankImg[3] = (HBITMAP)LoadImage(NULL, "right.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				
+	tankImg[1] = (HBITMAP)LoadImage(NULL, "bottom.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				
+	bg = (HBITMAP)LoadImage(NULL, "bg.bmp", IMAGE_BITMAP, 650, 450, LR_LOADFROMFILE);				//背景		
 
 
 	MyPaint(hdc);					//调用绘图函数
@@ -135,19 +138,28 @@ void StartPaint(HDC hdc)
 		BitBlt(mdc, 0, 0, 650, 450, bufdc, 0, 0, SRCCOPY);		
 		BitBlt(hdc, 0, 0, 650, 450, mdc, 0, 0, SRCCOPY);
 		tPre = GetTickCount();
+		printf("111\n");
 	}	
 }
 void MyPaint(HDC hdc)
 {				
 	if(isStart == false)
 		return;
+	printf("222\n");
 	//绘图
-	//SelectObject(bufdc, bg);
-	//BitBlt(mdc, 0, 0, 650, 450, bufdc, 0, 0, SRCCOPY);					
+	SelectObject(bufdc, bg);
+	BitBlt(mdc, 0, 0, 650, 450, bufdc, 0, 0, SRCCOPY);					
 
-	//画己方坦克
-	SelectObject(bufdc, tankLeftImg);
-	BitBlt(mdc, 0, 0, 30, 30, bufdc, 0, 0, SRCCOPY);					
+
+	/*
+	 * 己方坦克（若后期修改背景图，需要修改坦克图）
+	 */
+	int myDirection = myTank.GetDirection();			//坦克方向
+	int myPositionX = myTank.GetX();			//坦克位置
+	int myPositionY = myTank.GetY();			//坦克位置
+
+	SelectObject(bufdc, tankImg[myDirection]);
+	BitBlt(mdc, myPositionX, myPositionY, 50, 50, bufdc, 0, 0, SRCCOPY);					
 
 
 	
@@ -177,18 +189,43 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			PostQuitMessage(0);
 			break;
 
-		case VK_UP:			
-			break;
+		//坦克移动
+		case VK_UP:		{	
+			myTank.SetDirection(TOP);
+			int y = myTank.GetY();
+			y -= 5;				//移动速度
+			if(y <= 0)	y = 0;
+			if(y >= 450) y = 450;
+			myTank.SetY(y);
+			break;}
 		case VK_DOWN:
-			
-			break;
+			{	
+			myTank.SetDirection(BOTTOM);
+			int y = myTank.GetY();
+			y += 5;				//移动速度
+			if(y <= 0)	y = 0;
+			if(y >= 450) y = 450;
+			myTank.SetY(y);
+			break;}
 		case VK_LEFT:
-			
-			break;
+			{	
+			myTank.SetDirection(LEFT);
+			int x = myTank.GetX();
+			x -= 5;				//移动速度
+			if(x <= 0)	x = 0;
+			if(x >= 450) x = 450;
+			myTank.SetX(x);
+			break;}
 		case VK_RIGHT:
+			{	
+			myTank.SetDirection(RIGHT);
+			int x = myTank.GetX();
+			x += 5;				//移动速度
+			if(x <= 0)	x = 0;
+			if(x >= 450) x = 450;
+			myTank.SetX(x);
+			break;}
 			
-
-			break;
 		}
 		break;
 	case WM_DESTROY:
