@@ -10,7 +10,7 @@
 #pragma comment(lib,"winmm.lib")//导入声音头文件库
 
 HINSTANCE hInst;
-HBITMAP  bg,start,tankImg[4];						//图片
+HBITMAP  bg,start,tankImg[4],bullet;						//图片
 HDC		hdc, mdc, bufdc;
 HWND	hWnd;
 DWORD	tPre, tNow;						//控制刷新频率
@@ -122,6 +122,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	tankImg[2] = (HBITMAP)LoadImage(NULL, "left.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				
 	tankImg[3] = (HBITMAP)LoadImage(NULL, "right.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				
 	tankImg[1] = (HBITMAP)LoadImage(NULL, "bottom.bmp", IMAGE_BITMAP, 30, 30, LR_LOADFROMFILE);				
+	bullet = (HBITMAP)LoadImage(NULL, "bullet.bmp", IMAGE_BITMAP, 10, 10, LR_LOADFROMFILE);				
 	bg = (HBITMAP)LoadImage(NULL, "bg.bmp", IMAGE_BITMAP, 650, 450, LR_LOADFROMFILE);				//背景		
 
 
@@ -145,7 +146,7 @@ void MyPaint(HDC hdc)
 {				
 	if(isStart == false)
 		return;
-	printf("222\n");
+	
 	//绘图
 	SelectObject(bufdc, bg);
 	BitBlt(mdc, 0, 0, 650, 450, bufdc, 0, 0, SRCCOPY);					
@@ -159,10 +160,62 @@ void MyPaint(HDC hdc)
 	int myPositionY = myTank.GetY();			//坦克位置
 
 	SelectObject(bufdc, tankImg[myDirection]);
-	BitBlt(mdc, myPositionX, myPositionY, 50, 50, bufdc, 0, 0, SRCCOPY);					
+	BitBlt(mdc, myPositionX, myPositionY, 30, 30, bufdc, 0, 0, SRCCOPY);					
+	//画己方坦克子弹
+	//int dir = myTank.GetDirection();
+	Bullet *b = myTank.GetBullet();			//子弹数组	
+	int x= myTank.GetX();
+	int y = myTank.GetY();	
+	int speed = 4;				//子弹速度
+	for(int i = 0;i < 20;i++){				//遍历子弹		
+		Bullet temp = b[i];			
+		if(temp.exist == false)
+			continue;
+		int bx = temp.GetX();				//子弹横坐标
+		int by = temp.GetY();				//子弹纵坐标
+		int dir = temp.GetDir();			//子弹方向
+		if(dir == 0){			//top
+			by -= speed;
+			if(by<=0||by>=450){				//子弹越界
+				b[i].exist = false;
+				continue;
+			}
+			b[i].SetY(by);
+		}
+		if(dir == 1){			//下
+			by += speed;
+			if(by<=0||by>=450){				//子弹越界
+				b[i].exist = false;
+				continue;
+			}
+			b[i].SetY(by);
+		}
+		if(dir == 2){			//左
+			bx -= speed;
+			if(bx<=0||bx>=650){				//子弹越界
+				b[i].exist = false;
+				continue;
+			}
+			b[i].SetX(bx);
+		}
+		if(dir == 3){			//右
+			bx += speed;
+			if(bx<=0||bx>=650){				//子弹越界
+				b[i].exist = false;
+				continue;
+			}
+			b[i].SetX(bx);
+		}
+
+		//贴子弹
+		SelectObject(bufdc, bullet);
+		BitBlt(mdc, bx, by, 10, 10, bufdc, 0, 0, SRCCOPY);					
+	}
 
 
-	
+
+
+	//
 	BitBlt(hdc, 0, 0, 650, 450, mdc, 0, 0, SRCCOPY);
 	tPre = GetTickCount();
 
@@ -175,60 +228,113 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 		//按下键盘开始游戏
-	case WM_LBUTTONDOWN:  		
-		if(isStart == true)
-			break;								
-		isStart = true;	
-		PlaySound("music.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);	    //播放背景音乐				
-		break;
-
-	case WM_KEYDOWN:
-		switch (wParam)
-		{
-		case VK_ESCAPE:
-			PostQuitMessage(0);
+		case WM_LBUTTONDOWN:  		
+			if(isStart == true)
+				break;								
+			isStart = true;	
+			PlaySound("music.wav", NULL, SND_FILENAME | SND_ASYNC | SND_LOOP);	    //播放背景音乐				
 			break;
 
-		//坦克移动
-		case VK_UP:		{	
-			myTank.SetDirection(TOP);
-			int y = myTank.GetY();
-			y -= 5;				//移动速度
-			if(y <= 0)	y = 0;
-			if(y >= 450) y = 450;
-			myTank.SetY(y);
-			break;}
-		case VK_DOWN:
-			{	
-			myTank.SetDirection(BOTTOM);
-			int y = myTank.GetY();
-			y += 5;				//移动速度
-			if(y <= 0)	y = 0;
-			if(y >= 450) y = 450;
-			myTank.SetY(y);
-			break;}
-		case VK_LEFT:
-			{	
-			myTank.SetDirection(LEFT);
-			int x = myTank.GetX();
-			x -= 5;				//移动速度
-			if(x <= 0)	x = 0;
-			if(x >= 450) x = 450;
-			myTank.SetX(x);
-			break;}
-		case VK_RIGHT:
-			{	
-			myTank.SetDirection(RIGHT);
-			int x = myTank.GetX();
-			x += 5;				//移动速度
-			if(x <= 0)	x = 0;
-			if(x >= 450) x = 450;
-			myTank.SetX(x);
-			break;}
+		case WM_KEYDOWN:
+			switch (wParam)
+			{
+				case VK_ESCAPE:{
+					PostQuitMessage(0);
+				}
+				break;
 			
-		}
-		break;
-	case WM_DESTROY:
+				//坦克移动
+				case VK_UP:		{	
+					myTank.SetDirection(TOP);
+					int y = myTank.GetY();
+					y -= 5;				//移动速度
+					if(y <= 0)	y = 0;
+					if(y >= 450) y = 450;
+					myTank.SetY(y);
+					}
+					break;
+				case VK_DOWN:
+					{	
+					myTank.SetDirection(BOTTOM);
+					int y = myTank.GetY();
+					y += 5;				//移动速度
+					if(y <= 0)	y = 0;
+					if(y >= 420) y = 420;
+					myTank.SetY(y);
+					}
+					break;
+				case VK_LEFT:
+					{	
+					myTank.SetDirection(LEFT);
+					int x = myTank.GetX();
+					x -= 5;				//移动速度
+					if(x <= 0)	x = 0;
+					if(x >= 590) x = 590;
+					myTank.SetX(x);
+					}
+					break;
+				case VK_RIGHT:
+					{	
+					myTank.SetDirection(RIGHT);
+					int x = myTank.GetX();
+					x += 5;				//移动速度
+					if(x <= 0)	x = 0;
+					if(x >= 590) x = 590;
+					myTank.SetX(x);
+			
+			
+				}
+				break;
+
+				case VK_SPACE:{
+					int dir = myTank.GetDirection();
+					Bullet *b = myTank.GetBullet();			//子弹数组		
+					int x= myTank.GetX();
+					int y = myTank.GetY();		
+					int index = -1;			//新增子弹下标
+					for(int i = 0;i < 20;i++){
+						if(b[i].exist == false){
+							index = i;
+							b[i].exist = true;
+							break;
+						}
+					}
+					if(index == -1)
+						return 0;			//同时最多发射20个子弹
+					if(dir == 0){				//方向为上
+						//设置子弹位置
+						b[index].SetX(x+10);
+						b[index].SetY(y+2);
+						//设置子弹方向
+						b[index].SetDir(dir);
+					}
+					if(dir == 1){				//方向为下
+						//设置子弹位置
+						b[index].SetX(x+10);
+						b[index].SetY(y+33);
+						//设置子弹方向
+						b[index].SetDir(dir);
+					}
+					if(dir == 2){				//方向为左
+						//设置子弹位置
+						b[index].SetX(x - 13);
+						b[index].SetY(y+10);
+						//设置子弹方向
+						b[index].SetDir(dir);
+					}
+					if(dir == 3){				//方向为右
+						//设置子弹位置
+						b[index].SetX(x+33);
+						b[index].SetY(y+10);
+						//设置子弹方向
+						b[index].SetDir(dir);
+					}
+					break;
+				 }
+				break;
+			}
+			break;
+	case WM_DESTROY:{
 		int i;
 
 		DeleteDC(mdc);
@@ -237,9 +343,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		ReleaseDC(hWnd, hdc);
 
 		PostQuitMessage(0);
+		}
 		break;
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
+		
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
 }

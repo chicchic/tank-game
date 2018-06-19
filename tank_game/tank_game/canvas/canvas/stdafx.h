@@ -41,6 +41,8 @@ private:
 class Bullet: public Object
 {
 public:	
+	bool exist;
+	Bullet(){exist = false;}
 	void Set(int xx,int yy){
 		x = xx,y = yy;				//设置子弹坐标
 	}
@@ -48,8 +50,11 @@ public:
 	void SetY(int yy){y = yy;}
 	int GetX(){return x;}
 	int GetY(){return y;}	
+	int GetDir(){return dir;}
+	void SetDir(int d){dir = d;}
 private:
 	int x,y;			//子弹坐标
+	int dir;			//子弹方向	
 };
 
 
@@ -67,10 +72,11 @@ public:
 	int GetDirection(){return dir;}
 	int GetX(){return x;}
 	int GetY(){return y;}
+	
 private:
 	int x,y;			//坐标
 	int dir;			//方向
-	Bullet bullet[20];			//子弹数组
+	Bullet bullet[20];			//子弹数组	
 };
 
 
